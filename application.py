@@ -9,6 +9,7 @@ import settings
 
 import sys
 import os
+import time
 
 class application(object):
     
@@ -22,7 +23,8 @@ class application(object):
     lockServoObject = None
     lockServoPin = None
 
-    reedSwitchPin = 16
+    reedSwitchPin = None
+    doorButtonPin = None
 
     debugEnable = True
 
@@ -59,6 +61,23 @@ class application(object):
         physical.unlock(self.lockServoObject, self.debugEnable)
         self.lockStatus = False
 
+    def toggleLock(self, overrideSafety, debug):
+        
+        if self.lockStatus == True:
+            self.disengageLock(overrideSafety, debug)
+        else:
+            self.engageLock(overrideSafety, debug)
+
+    def doorEvent(self, channel):
+        
+        logger.log("Door closing event detected, sending lock engage in 3 seconds")
+        time.sleep(3)
+        self.engageLock(overrideSafety=False, debug=self.debugEnable)
+
+    def buttonEvent(self, channel):
+        
+        self.toggleLock(overrideSafety=True, debug=self.debugEnable)
+
     def assignSettings(self):
 
         # set application setting values from parsed settings file
@@ -70,29 +89,41 @@ class application(object):
         
         if self.settingList.get("reed-switch-pin") != None:
             self.reedSwitchPin = self.settingList["reed-switch-pin"]
+        
+        if self.settingList.get("door-button-pin") != None:
+            self.doorButtonPin = self.settingList["door-button-pin"]
+
+        if self.settingList.get("default-message") != None:
+            self.defaultMessage = self.settingList["default-message"]
+        else:
+            self.defaultMessage = "message not set"
 
         # fetch objects and initiallize
         if self.lockServoPin != None:
             self.lockServoObject = physical.initServo(self.lockServoPin, self.debugEnable)
             
+            # setup GPIO pins for read
+            physical.initReedSwitch(self.reedSwitchPin, self.debugEnable)
+            physical.initDoorButton(self.doorButtonPin, self.debugEnable)
+
             # enable event callback
-            physical.enableEventLock(self.lockServoPin, self.engageLock, self.debugEnable)
+            physical.enableDoorEvent(self.reedSwitchPin, self.doorEvent, self.debugEnable)
+            physical.enableButtonEvent(self.doorButtonPin, self.buttonEvent, self.debugEnable)
 
     # http exposed functions
 
     @cherrypy.expose
-    @cherrypy.tools.accept(media="text/plain")
+    @cherrypy.tools.accept()
     def unlockdoor(self):
         logger.log("Door unlock signal received")
         self.disengageLock(overrideSafety=False, debug=self.debugEnable)
 
     @cherrypy.expose
-    @cherrypy.tools.accept(media="text/plain")
+    @cherrypy.tools.accept()
     def lockdoor(self):
         logger.log("Door lock signal received")
         self.engageLock(overrideSafety=False, debug=self.debugEnable)
         
-
     @cherrypy.expose
     @cherrypy.tools.accept(media="text/plain")
     def setmessage(self, motdtext):
@@ -102,6 +133,9 @@ class application(object):
     @cherrypy.expose
     def infodigest(self):
         
+        # update sensors before assembling data
+        self.sensorUpdate()
+
         infoArray = dict()
 
         infoArray["door-status"] = self.doorStatus
@@ -118,6 +152,9 @@ class application(object):
     @cherrypy.expose
     def getdoorstatus(self):
         
+        # update sensors before assembling data
+        self.sensorUpdate()
+
         infoArray = dict()
 
         infoArray["door-status"] = self.doorStatus

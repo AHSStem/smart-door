@@ -51,12 +51,6 @@ def initReedSwitch(pin, debug=True):
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
-def enableEventLock(pin, callbackFunction, debug=True):
-    if debug:
-        logger.log("Enabling GPIO reed switch event detection")
-
-    GPIO.add_event_detect(pin, GPIO.RISING, callback=callbackFunction, bouncetime=300)
-
 def readDoorStatus(pin, debug=True):
     pinStatus=GPIO.input(pin)
     if pinStatus == 1:

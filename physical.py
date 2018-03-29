@@ -51,9 +51,28 @@ def initReedSwitch(pin, debug=True):
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
+def enableDoorEvent(pin, callbackFunction, debug=True):
+    if debug:
+        logger.log("Enabling GPIO reed switch event detection")
+
+    GPIO.add_event_detect(pin, GPIO.RISING, callback=callbackFunction, bouncetime=300)
+
 def readDoorStatus(pin, debug=True):
     pinStatus=GPIO.input(pin)
     if pinStatus == 1:
         return True
     else:
         return False
+
+def initDoorButton(pin, debug=True):
+    if debug:
+        logger.log("Setting door toggle button pin")
+        logger.log("GPIO mode set to BCM")
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+
+def enableButtonEvent(pin, callbackFunction, debug=True):
+    if debug:
+        logger.log("Enabling GPIO door button event detection")
+
+    GPIO.add_event_detect(pin, GPIO.RISING, callback=callbackFunction, bouncetime=300)
