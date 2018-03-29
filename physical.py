@@ -55,7 +55,7 @@ def enableDoorEvent(pin, callbackFunction, debug=True):
     if debug:
         logger.log("Enabling GPIO reed switch event detection")
 
-    GPIO.add_event_detect(pin, GPIO.RISING, callback=callbackFunction, bouncetime=300)
+    GPIO.add_event_detect(pin, GPIO.RISING, callback=callbackFunction, bouncetime=1000)
 
 def readDoorStatus(pin, debug=True):
     pinStatus=GPIO.input(pin)

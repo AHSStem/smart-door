@@ -61,13 +61,6 @@ class application(object):
         physical.unlock(self.lockServoObject, self.debugEnable)
         self.lockStatus = False
 
-    def toggleLock(self, overrideSafety, debug):
-        
-        if self.lockStatus == True:
-            self.disengageLock(overrideSafety, debug)
-        else:
-            self.engageLock(overrideSafety, debug)
-
     def doorEvent(self, channel):
         
         logger.log("Door closing event detected, sending lock engage in 3 seconds")
@@ -76,7 +69,9 @@ class application(object):
 
     def buttonEvent(self, channel):
         
-        self.toggleLock(overrideSafety=True, debug=self.debugEnable)
+        logger.log("Button press event detected, sending lock engage in 0.5 seconds")
+        time.sleep(0.5)
+        self.disengageLock(overrideSafety=True, debug=self.debugEnable)
 
     def assignSettings(self):
 
