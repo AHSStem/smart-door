@@ -26,6 +26,8 @@ class application(object):
     reedSwitchPin = None
     doorButtonPin = None
 
+    autolockEnable = None
+
     debugEnable = True
 
     settingList = settings.loadSettings("settings.json");
@@ -63,9 +65,13 @@ class application(object):
 
     def doorEvent(self, channel):
         
-        logger.log("Door closing event detected, sending lock engage in 3 seconds")
-        time.sleep(3)
-        self.engageLock(overrideSafety=False, debug=self.debugEnable)
+        # only allow door closing event actions if autolock is enabled
+        if self.autolockEnable:
+            logger.log("Door closing event detected, sending lock engage in 3 seconds")
+            time.sleep(3)
+            self.engageLock(overrideSafety=False, debug=self.debugEnable)
+        else:
+            logger.log("Door closing event detected, but autolock is not enabled")
 
     def buttonEvent(self, channel):
         
@@ -92,6 +98,11 @@ class application(object):
             self.defaultMessage = self.settingList["default-message"]
         else:
             self.defaultMessage = "message not set"
+        
+        if self.settingList.get("enable-autolock") != None:
+            self.autolockEnable = self.settingList["enable-autolock"]
+        else:
+            self.autolockEnable = False
 
         # fetch objects and initiallize
         if self.lockServoPin != None:
@@ -124,6 +135,18 @@ class application(object):
     def setmessage(self, motdtext):
         if motdtext != None:
             self.messageContent = motdtext
+        return json.dumps({"motd": self.messageContent})
+
+    @cherrypy.expose
+    @cherrypy.tools.accept()
+    def toggleAutolock(self):
+        logger.log("Recieved signal to toggle autolock")
+        if self.autolockEnable:
+            logger.log("Autolock is enabled - disabling...")
+            self.autolockEnable = False
+        else:
+            logger.log("Autolock is disabled - enabling...")
+            self.autolockEnable = True
 
     @cherrypy.expose
     def infodigest(self):
@@ -136,6 +159,7 @@ class application(object):
         infoArray["door-status"] = self.doorStatus
         infoArray["lock-status"] = self.lockStatus
         infoArray["motd"] = self.messageContent
+        infoArray["autolock-enabled"] = self.autolockEnable
         # not implemented functions
         infoArray["light-status"] = None
         infoArray["temperature"] = None
@@ -156,6 +180,10 @@ class application(object):
         infoArray["lock-status"] = self.lockStatus
 
         return json.dumps(infoArray)
+
+    @cherrypy.expose
+    def getautolockstatus(self):
+        return json.dumps({"autolock-enabled": self.autolockEnable})
 
 if __name__ == "__main__":
     

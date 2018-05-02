@@ -3,6 +3,7 @@ var origin = window.location.origin;
 
 var doorStatus = null;
 var lockStatus = null;
+var autolockEnabled = null;
 var lightStatus = null;
 var temperature = null;
 var messageContent = null;
@@ -29,6 +30,16 @@ function setDoorString(door, lock) {
                 element.innerHTML = "unknown error";
             }
         }
+    }
+}
+
+function setAutolockString(enabled) {
+    var element = document.getElementById("proplist-autolock");
+
+    if(enabled) {
+        element.innerHTML = "Auto-lock enabled";
+    } else {
+        element.innerHTML = "Auto-lock disabled";
     }
 }
 
@@ -60,6 +71,12 @@ httpObject.onreadystatechange = function() {
             lockStatus = null;
         }
 
+        if(parsed["autolock-enabled"] != null) {
+            autolockEnabled = parsed["autolock-enabled"];
+        } else {
+            autolockEnabled = null;
+        }
+
         if(parsed["motd"] != null) {
             messageContent = parsed["motd"];
         } else {
@@ -79,6 +96,7 @@ httpObject.onreadystatechange = function() {
         }
 
         setDoorString(doorStatus, lockStatus);
+        setAutolockString(autolockEnabled);
         setMessage(messageContent);
     }
 }
